@@ -9,8 +9,11 @@ Single :func:`train` entry point dispatches on model type:
   on disease, all 6 channels stacked as input.
 
 AdamW + cosine annealing, AMP enabled by default on CUDA. Resumable across
-Colab session restarts via Drive checkpoints; pushes to HF Hub at the end
-of each epoch when ``hf_repo`` is set.
+Colab session restarts via a single ``latest.pt`` checkpoint on Drive (the
+retention policy keeps only the most recent state locally, since each
+checkpoint is ~290 MB and Drive Free is 15 GB). Per-epoch history lives on
+the HF Hub: ``latest.pt`` is uploaded as ``epoch_NNN.pt`` at the end of
+each epoch when ``hf_repo`` is set.
 """
 
 from __future__ import annotations
@@ -157,12 +160,12 @@ def load_checkpoint(
     return state.get("step", 0), state.get("epoch", 0)
 
 
-def _push_to_hf(local_path: Path, repo_id: str) -> None:
+def _push_to_hf(local_path: Path, repo_id: str, path_in_repo: str | None = None) -> None:
     from huggingface_hub import HfApi, create_repo
     create_repo(repo_id=repo_id, repo_type="model", exist_ok=True)
     HfApi().upload_file(
         path_or_fileobj=str(local_path),
-        path_in_repo=local_path.name,
+        path_in_repo=path_in_repo or local_path.name,
         repo_id=repo_id,
         repo_type="model",
     )
@@ -293,8 +296,6 @@ def train(
                       "  ".join(f"{k}={v:.3f}" for k, v in metrics.items()))
 
             if step % cfg.ckpt_every_steps == 0:
-                save_checkpoint(checkpoint_dir / f"step_{step:07d}.pt",
-                                model, optimizer, scheduler, kendall, scaler, step, epoch, cfg)
                 save_checkpoint(checkpoint_dir / "latest.pt",
                                 model, optimizer, scheduler, kendall, scaler, step, epoch, cfg)
 
@@ -307,14 +308,15 @@ def train(
             with log_path.open("a") as f:
                 f.write(json.dumps({"epoch": epoch, "split": "val", **val_metrics}) + "\n")
 
-        epoch_ckpt = save_checkpoint(checkpoint_dir / f"epoch_{epoch:03d}.pt",
-                                     model, optimizer, scheduler, kendall, scaler, step, epoch, cfg)
+        # Retention policy: keep only latest.pt locally. HF Hub holds the
+        # per-epoch history (latest.pt is uploaded as epoch_NNN.pt to the repo).
         save_checkpoint(checkpoint_dir / "latest.pt",
                         model, optimizer, scheduler, kendall, scaler, step, epoch, cfg)
         if hf_repo:
             try:
-                _push_to_hf(epoch_ckpt, hf_repo)
-                print(f"pushed {epoch_ckpt.name} to HF {hf_repo}")
+                _push_to_hf(checkpoint_dir / "latest.pt", hf_repo,
+                            path_in_repo=f"epoch_{epoch:03d}.pt")
+                print(f"pushed latest.pt to HF {hf_repo} as epoch_{epoch:03d}.pt")
             except Exception as e:
                 print(f"HF push failed: {e}")
 
