@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cerberus-neuro"
-version = "0.0.5"
+version = "0.0.6"
 description = "Cerberus-inspired multi-task ResNet34 for the Broad NeuroPainting Cell Painting dataset (cell-type classification, virtual staining, disease-state classification)"
 readme = "README.md"
 requires-python = ">=3.10"
