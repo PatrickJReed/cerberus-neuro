@@ -28,7 +28,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from pytorch_msssim import ssim
 from torch.optim import AdamW
-from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
 from torch.utils.data import DataLoader
 
 from cerberus_neuro.model import (
@@ -44,6 +44,7 @@ class TrainConfig:
     steps_per_epoch: int = 200          # IterableDataset: caller computes from manifest size
     lr: float = 3e-4
     weight_decay: float = 1e-4
+    warmup_steps: int = 0                # 0 disables warmup; otherwise linear ramp 0 -> lr
     amp: bool = True
     log_every_steps: int = 25
     ckpt_every_steps: int = 250
@@ -242,7 +243,19 @@ def train(
 
     params = list(model.parameters()) + (list(kendall.parameters()) if kendall else [])
     optimizer = AdamW(params, lr=cfg.lr, weight_decay=cfg.weight_decay)
-    scheduler = CosineAnnealingLR(optimizer, T_max=cfg.n_epochs * cfg.steps_per_epoch)
+
+    total_steps = cfg.n_epochs * cfg.steps_per_epoch
+    if cfg.warmup_steps > 0:
+        warmup = LinearLR(
+            optimizer, start_factor=1e-6, end_factor=1.0, total_iters=cfg.warmup_steps
+        )
+        cosine = CosineAnnealingLR(optimizer, T_max=max(1, total_steps - cfg.warmup_steps))
+        scheduler = SequentialLR(
+            optimizer, schedulers=[warmup, cosine], milestones=[cfg.warmup_steps]
+        )
+    else:
+        scheduler = CosineAnnealingLR(optimizer, T_max=total_steps)
+
     scaler = torch.amp.GradScaler("cuda") if cfg.amp and device == "cuda" else None
 
     step, epoch_start = 0, 0
