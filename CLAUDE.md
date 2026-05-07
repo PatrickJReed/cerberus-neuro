@@ -62,7 +62,7 @@ These constraints exist because the project must ship in 6–8 weeks of evening 
 - **ResNet34 with three task heads, period.** Don't swap to ViT, EfficientNet, or other architectures in v0. The point is to faithfully reproduce the BMS POC architecture; architecture variants are v1 stretch.
 - **Don't try to beat the BMS internal numbers.** Internal version had access to internal dataset preparation, BMS-tuned hyperparameters, and BMS infrastructure. Reproduction targets reasonable performance on the public data, not performance parity with the internal version.
 - **No hyperparameter sweeps in v0.** One config, train, evaluate, ship. Sweeps are v1.
-- **No pretrained weights from elsewhere unless explicitly justified.** The point is a clean public reproduction, not a transfer-learning result.
+- **ImageNet-pretrained encoder by default** (`ResNet34_Weights.IMAGENET1K_V1`), `conv1` adapted for the input-channel count of each model variant (mean across channels for 1-ch BF; tile-and-scale for 6-ch baseline). Standard microscopy-CV transfer-learning recipe; the dossier flags the BMS internal version's pretraining choice as unknown, so adopting the standard practice is honest. `pretrained_encoder=False` available for a v1 from-scratch ablation if useful for the writeup.
 
 ### Repo discipline
 

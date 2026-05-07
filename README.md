@@ -1,6 +1,6 @@
 # cerberus-neuro
 
-> Cerberus-inspired multi-task ResNet34 on the Broad NeuroPainting Cell Painting dataset. Three task heads on a shared image encoder: cell-type classification, virtual staining (brightfield → 5 fluorescence channels), and disease-state classification (control vs 22q11.2 deletion). Trained from scratch as a clean public reproduction.
+> Cerberus-inspired multi-task ResNet34 on the Broad NeuroPainting Cell Painting dataset. Three task heads on a shared image encoder: cell-type classification, virtual staining (brightfield → 5 fluorescence channels), and disease-state classification (control vs 22q11.2 deletion). Encoder initialized from ImageNet weights and fine-tuned end-to-end on NeuroPainting.
 
 ## What this is
 
@@ -16,7 +16,7 @@ The headline scientific question is operational, not academic: how much of the d
 2. **Virtual staining** — U-Net-style decoder with skip connections at every encoder stride, producing a 5-channel fluorescence prediction (DNA, mitochondria, AGP, ER, RNA) at the input resolution.
 3. **Disease-state classification** — binary (control vs 22q11.2 deletion).
 
-ResNet34 follows the torchvision implementation but with a single-channel input conv. ~24M parameters total, trained end-to-end from scratch with no ImageNet weights.
+ResNet34 follows the torchvision implementation. The encoder is initialized from ImageNet1K_V1 weights, with `conv1` rebuilt for the model's input-channel count: mean across the 3 pretrained channels for the brightfield (1-channel) Cerberus encoder; tiled and rescaled for the 6-channel baseline encoder. The whole model is fine-tuned end-to-end on NeuroPainting. ~24M parameters total.
 
 **`BaselineDiseaseClassifier` (the upper-bound baseline).** Same ResNet34 encoder, takes the full 6-channel stack (BF + 5 fluorescence), exposes only the disease head. Establishes the all-channel disease accuracy you can reach when the model has direct access to mitochondrial and ER intensity rather than having to infer it.
 

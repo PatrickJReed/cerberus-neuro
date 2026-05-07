@@ -21,9 +21,12 @@ Two modules in this file:
    bound the Cerberus model is compared against in the paired-experiment
    v0 evaluation.
 
-ResNet34 follows the standard torchvision implementation but with a
-configurable input-channel conv. Trained from scratch; no ImageNet weights
-(per ``CLAUDE.md`` scope discipline for the public reproduction).
+ResNet34 follows the standard torchvision implementation. The encoder is
+initialized from torchvision's ImageNet1K_V1 weights by default
+(``pretrained_encoder=True``); ``conv1`` is rebuilt to accept the model's
+``in_channels`` while preserving expected activation magnitude (mean for
+1-channel BF; tile-and-scale for the 6-channel baseline). Pass
+``pretrained_encoder=False`` for the clean-from-scratch ablation.
 
 For a 256x256 input the encoder produces feature maps at strides
 {2, 4, 8, 16, 32} with channel counts {64, 64, 128, 256, 512}; the
@@ -38,7 +41,7 @@ from dataclasses import dataclass
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision.models import resnet34
+from torchvision.models import ResNet34_Weights, resnet34
 
 
 @dataclass
@@ -48,13 +51,41 @@ class CerberusOutput:
     fluorescence_pred: torch.Tensor      # (N, n_fluorescence_channels, H, W)
 
 
-class ResNet34Encoder(nn.Module):
-    """ResNet34 trunk producing feature maps at five stride levels."""
+def _adapt_conv1(pretrained_weight: torch.Tensor, in_channels: int) -> torch.Tensor:
+    """Adapt a pretrained 3-channel conv1 to ``in_channels`` while preserving
+    expected activation magnitude.
 
-    def __init__(self, in_channels: int = 1):
+    - 1 channel: mean across input channels.
+    - 3 channels: pass through unchanged.
+    - >3 channels: tile the pretrained weights and scale by ``3 / in_channels``.
+    """
+    if in_channels == 3:
+        return pretrained_weight.clone()
+    if in_channels == 1:
+        return pretrained_weight.mean(dim=1, keepdim=True).clone()
+    reps = (in_channels + 2) // 3
+    tiled = pretrained_weight.repeat(1, reps, 1, 1)[:, :in_channels]
+    return (tiled * (3.0 / in_channels)).clone()
+
+
+class ResNet34Encoder(nn.Module):
+    """ResNet34 trunk producing feature maps at five stride levels.
+
+    When ``pretrained=True`` (default), the trunk is initialized from
+    torchvision's ImageNet1K_V1 weights and ``conv1`` is rebuilt to accept
+    ``in_channels`` while preserving expected activation magnitude. This is
+    the standard microscopy-CV transfer-learning recipe; ``pretrained=False``
+    falls back to random init for the clean public-reproduction story.
+    """
+
+    def __init__(self, in_channels: int = 1, pretrained: bool = True):
         super().__init__()
-        base = resnet34(weights=None)
+        weights = ResNet34_Weights.IMAGENET1K_V1 if pretrained else None
+        base = resnet34(weights=weights)
         self.conv1 = nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        if pretrained:
+            with torch.no_grad():
+                self.conv1.weight.copy_(_adapt_conv1(base.conv1.weight, in_channels))
         self.bn1 = base.bn1
         self.relu = base.relu
         self.maxpool = base.maxpool
@@ -148,9 +179,10 @@ class CerberusModel(nn.Module):
         n_cell_types: int = 4,
         n_line_conditions: int = 2,
         n_fluorescence_channels: int = 5,
+        pretrained_encoder: bool = True,
     ):
         super().__init__()
-        self.encoder = ResNet34Encoder(in_channels=in_channels)
+        self.encoder = ResNet34Encoder(in_channels=in_channels, pretrained=pretrained_encoder)
         self.cell_type_head = ClassifierHead(512, n_cell_types)
         self.line_condition_head = ClassifierHead(512, n_line_conditions)
         self.fluorescence_head = VirtualStainingHead(n_fluorescence_channels)
@@ -190,9 +222,9 @@ class BaselineDiseaseClassifier(nn.Module):
 
     model_kind = "baseline"
 
-    def __init__(self, in_channels: int = 6, n_classes: int = 2):
+    def __init__(self, in_channels: int = 6, n_classes: int = 2, pretrained_encoder: bool = True):
         super().__init__()
-        self.encoder = ResNet34Encoder(in_channels=in_channels)
+        self.encoder = ResNet34Encoder(in_channels=in_channels, pretrained=pretrained_encoder)
         self.head = ClassifierHead(512, n_classes)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
