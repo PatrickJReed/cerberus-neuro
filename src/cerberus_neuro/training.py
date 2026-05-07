@@ -149,7 +149,16 @@ def load_checkpoint(
     scaler=None,
 ) -> tuple[int, int]:
     state = torch.load(path, map_location="cpu", weights_only=False)
-    model.load_state_dict(state["model"])
+    # Strict load: refuse to silently overwrite a freshly-initialized model
+    # (e.g., ImageNet-pretrained weights) with state from an architecturally
+    # incompatible checkpoint. If the keys or shapes don't match, raise.
+    incompat = model.load_state_dict(state["model"], strict=True)
+    if hasattr(incompat, "missing_keys") and (incompat.missing_keys or incompat.unexpected_keys):
+        raise RuntimeError(
+            f"Checkpoint at {path} doesn't match current model: "
+            f"missing={incompat.missing_keys[:5]}, unexpected={incompat.unexpected_keys[:5]}. "
+            f"Delete latest.pt to start from a fresh init, or fix the architecture mismatch."
+        )
     # Each subordinate state load is wrapped: a config change between runs
     # (e.g., switching CosineAnnealingLR -> SequentialLR for warmup) will
     # produce an incompatible state dict for that one component. Warn and
