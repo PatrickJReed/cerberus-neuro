@@ -22,6 +22,18 @@ This spec sets a v0 phase plan that addresses both failure modes by sequencing t
 
 Validate the v0 paired-experiment narrative is achievable on the current 16k-crop training subset before committing more time to multi-task tuning. Phase 1 (this spec) trains the baseline disease classifier; Phase 2 (separate spec, after Phase 1 outcome) trains the multi-task Cerberus model and reports the gap.
 
+## v0 phase sequencing (overall plan, for context)
+
+This spec covers Phase 1 only. The full v0 phase plan, decided alongside this spec, is:
+
+- **Phase 0.5 — Cell-type single-task deployment.** Train `CellTypeOnlyModel` to stable val accuracy on the shared `ResNet34Encoder` architecture; push to Hugging Face Hub as `patrickjreed/cerberus-neuro-cell-type-v0`. Already validated at 0.96 val acc in the sanity check; this phase just packages it as a shippable v0 artifact. ~30 minutes wall-clock. Runs in parallel with Phase 1.
+- **Phase 1 — Baseline disease classifier (this spec).** Train `BaselineDiseaseClassifier` to interpretable val accuracy as the gate for Phase 2. ~2 hours wall-clock.
+- **Phase 2 — 2-head multi-task Cerberus + paired-experiment evaluation (separate spec, after Phase 1 outcome).** Train a Cerberus model with **two heads** (organelle segmentation + disease classification) — cell-type is shipped separately in Phase 0.5 because (a) it's already independently validated and (b) including it in multi-task adds gradient interference for a problem that's already solved. Compare Cerberus disease accuracy to Phase 1's baseline; report the gap. ~3–6 hours wall-clock depending on Phase 2 design.
+
+The "Cerberus" architectural pattern (shared encoder + multi-head decoder) is preserved with 2 heads. The Lyu et al. paper had three binary-segmentation decoders combined into one output; Patrick's adaptation has always used heterogeneous heads. The pattern is the value, not the literal head count.
+
+The v0 narrative becomes: "Three task-specific models share the same `ResNet34Encoder` architecture, each independently validated. Disease and segmentation are jointly optimized in the multi-task `CerberusModel`; cell-type is shipped as a separate single-task model. Cell-type integration into the multi-task model is v1."
+
 ## Success criteria
 
 ### Project-level (v0 overall)
@@ -90,7 +102,7 @@ When Phase 1 finishes (~2 hours wall-clock), `train_log.jsonl` has 15 val record
 
 The decision gate maps this number to the next action via the table in the Phase 1 success criteria above.
 
-If `acc ≥ 0.65`: launch Phase 2 (separate spec). Phase 2's design will cover the multi-task config decisions (BCE+Dice loss, full encoder LR, 10–25 epoch budget, etc.). Phase 2 has its own success criterion (Cerberus disease > 0.50, gap to baseline > 5 percentage points).
+If `acc ≥ 0.65`: launch Phase 2 (separate spec). Phase 2's design will cover the 2-head multi-task config decisions (BCE+Dice loss, full encoder LR, 10–25 epoch budget, etc.). Phase 2 has its own success criterion (Cerberus disease > 0.50, gap to baseline > 5 percentage points).
 
 If `acc 0.55–0.65`: pause and decide between (a) accepting the narrower gap as v0's headline number, or (b) writing a Phase 1.5 spec for data scope-up before continuing. Concrete scope-up paths considered: include 63× neurons batch (would require resolution adaptation), drop `wells_per_cell_type` cap entirely (modest gain since 48 is already near-saturating), pivot to per-cell crops (v1 stretch).
 
@@ -112,9 +124,11 @@ If Phase 1 results require scope-up, Phase 1.5 will be a separate brainstormed s
 
 Phase 1 deliberately excludes the following. Each is reserved for a later spec when its prerequisites are met:
 
-- Multi-task Cerberus training (Phase 2; gated on Phase 1 outcome).
+- 2-head Multi-task Cerberus training (Phase 2; gated on Phase 1 outcome).
+- Cell-type single-task deployment (Phase 0.5; brief separate sub-task — package the validated `CellTypeOnlyModel` and push to HF Hub. Not in this spec because it's a deployment task, not a research question; can run in parallel with Phase 1).
 - Any modification to `BaselineDiseaseClassifier`, `data.py`, or `training.py`. The baseline run uses validated, in-place infrastructure end-to-end.
-- The segmentation head's role in v0. The Phase 1 success criterion is about disease accuracy and doesn't depend on segmentation quality. Segmentation will be revisited as part of the Phase 2 design (for the Cerberus multi-task model) or, if Phase 2 is gated negatively, dropped from v0 entirely.
+- The segmentation head's role in v0. The Phase 1 success criterion is about disease accuracy and doesn't depend on segmentation quality. Segmentation will be revisited as part of the Phase 2 design (for the 2-head Cerberus multi-task model) or, if Phase 2 is gated negatively, dropped from v0 entirely.
+- Cell-type head's role in multi-task Cerberus. By design, the 2-head Phase 2 model has segmentation + disease only. Cell-type integration is v1.
 - Hyperparameter sweeps. Phase 1 uses one config (the same recipe that produced the cell-type-only 0.96 val acc result) and reports what happens. No sweeps.
 - Per-cell crops, 63× resolution, MAE encoder pretraining. All v1 stretch goals already documented in `README.md`.
 
