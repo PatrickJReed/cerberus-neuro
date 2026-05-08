@@ -42,9 +42,11 @@ from cerberus_neuro.model import (
 class TrainConfig:
     n_epochs: int = 5
     steps_per_epoch: int = 200          # IterableDataset: caller computes from manifest size
-    lr: float = 3e-4
+    lr: float = 3e-4                     # learning rate for new (head) parameters
+    encoder_lr_ratio: float = 1.0        # ratio for pretrained encoder; e.g. 0.1 -> encoder lr = 0.1 * lr
     weight_decay: float = 1e-4
     warmup_steps: int = 0                # 0 disables warmup; otherwise linear ramp 0 -> lr
+    grad_clip_norm: float = 1.0          # 0 disables gradient norm clipping
     amp: bool = True
     log_every_steps: int = 25
     ckpt_every_steps: int = 250
@@ -290,8 +292,25 @@ def train(
     model = model.to(device)
     kendall = KendallMultiTaskLoss(n_tasks=3).to(device) if is_cerberus else None
 
-    params = list(model.parameters()) + (list(kendall.parameters()) if kendall else [])
-    optimizer = AdamW(params, lr=cfg.lr, weight_decay=cfg.weight_decay)
+    # Discriminative LR: pretrained encoder gets a slower LR than newly-initialized
+    # heads. This protects ImageNet features while letting the heads (random init)
+    # take big optimizer steps to fit the task. Default ratio 1.0 = uniform LR.
+    if cfg.encoder_lr_ratio != 1.0 and hasattr(model, "encoder"):
+        encoder_params = list(model.encoder.parameters())
+        encoder_param_ids = {id(p) for p in encoder_params}
+        head_params = [p for p in model.parameters() if id(p) not in encoder_param_ids]
+        if kendall is not None:
+            head_params += list(kendall.parameters())
+        optimizer = AdamW(
+            [
+                {"params": encoder_params, "lr": cfg.lr * cfg.encoder_lr_ratio},
+                {"params": head_params, "lr": cfg.lr},
+            ],
+            weight_decay=cfg.weight_decay,
+        )
+    else:
+        params = list(model.parameters()) + (list(kendall.parameters()) if kendall else [])
+        optimizer = AdamW(params, lr=cfg.lr, weight_decay=cfg.weight_decay)
 
     total_steps = cfg.n_epochs * cfg.steps_per_epoch
     if cfg.warmup_steps > 0:
@@ -336,10 +355,19 @@ def train(
 
             if scaler is not None:
                 scaler.scale(loss).backward()
+                if cfg.grad_clip_norm > 0:
+                    scaler.unscale_(optimizer)
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.grad_clip_norm)
+                    if kendall is not None:
+                        torch.nn.utils.clip_grad_norm_(kendall.parameters(), cfg.grad_clip_norm)
                 scaler.step(optimizer)
                 scaler.update()
             else:
                 loss.backward()
+                if cfg.grad_clip_norm > 0:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.grad_clip_norm)
+                    if kendall is not None:
+                        torch.nn.utils.clip_grad_norm_(kendall.parameters(), cfg.grad_clip_norm)
                 optimizer.step()
             scheduler.step()
 
