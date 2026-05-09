@@ -65,11 +65,11 @@ v0 uses a scoped subset of the data (~16k distinct training crops from 48 wells 
 | Environment | `notebooks/00_environment_smoke.ipynb` | done | — |
 | S3 audit | `notebooks/01_data_exploration.ipynb` | done | All audit gaps closed |
 | Data pipeline | `src/cerberus_neuro/data.py` | done | exercised in all three sanity checks |
-| Cell-type classification | `notebooks/02_sanity_check.ipynb` § 3 | **validated** | Val acc 0.963 at epoch 0; no further work needed at v0 scale |
-| Organelle segmentation | `notebooks/02_sanity_check.ipynb` § 4 | active diagnosis | First convergence: BCE descended cleanly but IoU flat at constant-mean attractor. Combined BCE+Dice loss landed; awaiting validation. |
-| Disease classification | not yet trained | pending | — |
-| All-channel disease baseline | not yet trained | pending | — |
-| Multi-task Cerberus model | `notebooks/02_train.ipynb` | v1 work | First v0 attempts hit decoder collapse on the segmentation head; pending re-attempt with the BCE+Dice loss now landed |
+| Cell-type classification | `notebooks/02_cell_type_deploy.ipynb` | **shipped** | **Best val acc 0.9905 at epoch 4. HF Hub: [`patrickjreed/cerberus-neuro-cell-type-v0`](https://huggingface.co/patrickjreed/cerberus-neuro-cell-type-v0).** |
+| All-channel disease baseline | `notebooks/02_train.ipynb` § 4 | **shipped** | **Best val acc 0.7311 at epochs 12-13. HF Hub: [`patrickjreed/cerberus-neuro-v0-baseline`](https://huggingface.co/patrickjreed/cerberus-neuro-v0-baseline).** Disease signal is robust at the v0 16k-crop scale. |
+| Organelle segmentation | `notebooks/02_sanity_check.ipynb` § 4 | active diagnosis | BCE+Dice loss landed; encoder-LR experiments in flight. Will be integrated into the 2-head Cerberus multi-task model in Phase 2. |
+| Disease classification (Cerberus brightfield-only) | `notebooks/02_train.ipynb` § 3 | Phase 2 (pending) | Trains in the multi-task Cerberus model with the segmentation head. Goal: val acc in [0.55, 0.65] = 10-20pp gap to baseline. |
+| 2-head Cerberus multi-task | `notebooks/02_train.ipynb` § 3 | Phase 2 (pending design) | Phase 1 (baseline) shipped at 0.73 val acc, unblocking the paired-experiment narrative. Phase 2 brainstorm + spec is the next work. |
 | Evaluation + writeup | `notebooks/03_eval.ipynb` | pending | — |
 
 **No headline metrics are claimed beyond the ones in this table.** Validated numbers will land here as each task converges.
