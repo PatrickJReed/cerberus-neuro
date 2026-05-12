@@ -47,3 +47,26 @@ def test_donor_counts_by_condition_returns_correct_counts(tiny_manifest):
 def test_donor_counts_by_condition_empty_returns_empty():
     empty = pd.DataFrame(columns=["Metadata_line_ID", "Metadata_line_condition"])
     assert donor_counts_by_condition(empty) == {}
+
+
+from cerberus_neuro.audit import donor_well_table
+
+
+def test_donor_well_table_shape(tiny_manifest):
+    table = donor_well_table(tiny_manifest)
+    # 6 donors x 4 cell types per donor = 24 (donor, cell_type) groups.
+    assert len(table) == 24
+    assert set(table.columns) == {"cell_type", "line_condition", "line_ID", "n_wells"}
+
+
+def test_donor_well_table_well_counts(tiny_manifest):
+    table = donor_well_table(tiny_manifest)
+    # Each (donor, cell_type) combo has 2 wells in the fixture.
+    assert (table["n_wells"] == 2).all()
+
+
+def test_donor_well_table_donor_coverage(tiny_manifest):
+    table = donor_well_table(tiny_manifest)
+    # Every donor appears in every cell type.
+    assert set(table["line_ID"]) == {"D1", "D2", "D3", "D4", "D5", "D6"}
+    assert set(table["cell_type"]) == {"stem", "progen", "neuron", "astro"}

@@ -30,3 +30,44 @@ def donor_counts_by_condition(manifest: pd.DataFrame) -> dict[str, int]:
         .nunique()
         .to_dict()
     )
+
+
+def donor_well_table(manifest: pd.DataFrame) -> pd.DataFrame:
+    """Build a (cell_type, line_condition, line_ID) -> well-count table.
+
+    One row per unique (cell_type, line_condition, line_ID) triple, with
+    ``n_wells`` = count of distinct (Metadata_Plate, Metadata_Well) pairs
+    falling under that triple.
+
+    Returns
+    -------
+    DataFrame with columns: ``cell_type``, ``line_condition``, ``line_ID``,
+    ``n_wells``. Sorted by (cell_type, line_condition, line_ID).
+    """
+    well_keys = (
+        manifest[
+            [
+                "Metadata_cell_type",
+                "Metadata_line_condition",
+                "Metadata_line_ID",
+                "Metadata_Plate",
+                "Metadata_Well",
+            ]
+        ]
+        .drop_duplicates()
+    )
+    counts = (
+        well_keys.groupby(
+            ["Metadata_cell_type", "Metadata_line_condition", "Metadata_line_ID"]
+        )
+        .size()
+        .reset_index(name="n_wells")
+    )
+    counts = counts.rename(
+        columns={
+            "Metadata_cell_type": "cell_type",
+            "Metadata_line_condition": "line_condition",
+            "Metadata_line_ID": "line_ID",
+        }
+    )
+    return counts.sort_values(["cell_type", "line_condition", "line_ID"]).reset_index(drop=True)
