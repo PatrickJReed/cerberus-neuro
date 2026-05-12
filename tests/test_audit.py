@@ -110,3 +110,21 @@ def test_imbalance_metric_single_donor_returns_nan():
     imbalance = imbalance_metric(table)
     assert math.isnan(imbalance[("stem", "control")]["cv"])
     assert imbalance[("stem", "control")]["n_donors"] == 1
+
+
+from cerberus_neuro.audit import crop_budget_estimate
+
+
+def test_crop_budget_estimate_returns_expected_shape(tiny_manifest):
+    budget = crop_budget_estimate(tiny_manifest, crops_per_site=10)
+    # 6 donors x 4 cell types x 2 wells x 4 sites = 192 rows
+    # 6 donors x 4 cell types x 2 wells = 48 wells.
+    assert budget["n_sites"] == 192
+    assert budget["n_wells"] == 48
+    assert budget["crops_per_site"] == 10
+    assert budget["max_crops_upper_bound"] == 1920
+
+
+def test_crop_budget_estimate_zero_crops_per_site(tiny_manifest):
+    budget = crop_budget_estimate(tiny_manifest, crops_per_site=0)
+    assert budget["max_crops_upper_bound"] == 0

@@ -107,3 +107,38 @@ def imbalance_metric(table: pd.DataFrame) -> dict[tuple[str, str], dict[str, flo
             cv = float(wells.std() / mean) if mean > 0 else math.nan
         out[(cell_type, condition)] = {"cv": cv, "n_donors": n_donors}
     return out
+
+
+def crop_budget_estimate(manifest: pd.DataFrame, crops_per_site: int) -> dict[str, int]:
+    """Naive upper-bound estimate of total crops yielded by the pipeline.
+
+    Real yield is typically 60-90% of this upper bound after the
+    CellProfiler ``min_cells_per_crop`` filter is applied at dataset
+    iteration time. Use this estimate as an *upper bound* for Phase 2
+    crop-budget planning; multiply by the empirical yield ratio from
+    Phase 0.5 / Phase 1 for a realistic number.
+
+    Parameters
+    ----------
+    manifest
+        DataFrame with columns ``Metadata_Plate``, ``Metadata_Well`` (one
+        row per (plate, well, site) tuple).
+    crops_per_site
+        Configurable number of crops yielded per site by the
+        CellProfiler-centroid tile selector.
+
+    Returns
+    -------
+    Dict with ``n_sites``, ``n_wells``, ``crops_per_site``, and
+    ``max_crops_upper_bound`` keys.
+    """
+    n_sites = int(len(manifest))
+    n_wells = int(
+        manifest.groupby(["Metadata_Plate", "Metadata_Well"]).ngroups
+    )
+    return {
+        "n_sites": n_sites,
+        "n_wells": n_wells,
+        "crops_per_site": int(crops_per_site),
+        "max_crops_upper_bound": n_sites * int(crops_per_site),
+    }
