@@ -284,6 +284,16 @@ class BaselineDiseaseClassifier(nn.Module):
         _, _, _, _, x4 = self.encoder(x)
         return self.head(x4)
 
+    def extract_embedding(self, x: torch.Tensor) -> torch.Tensor:
+        """Return the 512-dim pre-classifier embedding for the donor probe.
+
+        This is the global-average-pooled output of the encoder's final conv
+        stage. Shape: ``[B, 512]``.
+        """
+        _, _, _, _, x4 = self.encoder(x)
+        pooled = torch.nn.functional.adaptive_avg_pool2d(x4, output_size=1)
+        return pooled.flatten(1)
+
     def parameter_count(self) -> dict[str, int]:
         def count(m: nn.Module) -> int:
             return sum(p.numel() for p in m.parameters() if p.requires_grad)
