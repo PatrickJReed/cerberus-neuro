@@ -1,10 +1,17 @@
 """Tests for cerberus_neuro.audit donor-structure utilities."""
 from __future__ import annotations
 
+import math
+
 import pandas as pd
 import pytest
 
-from cerberus_neuro.audit import donor_counts_by_condition
+from cerberus_neuro.audit import (
+    crop_budget_estimate,
+    donor_counts_by_condition,
+    donor_well_table,
+    imbalance_metric,
+)
 
 
 @pytest.fixture
@@ -49,9 +56,6 @@ def test_donor_counts_by_condition_empty_returns_empty():
     assert donor_counts_by_condition(empty) == {}
 
 
-from cerberus_neuro.audit import donor_well_table
-
-
 def test_donor_well_table_shape(tiny_manifest):
     table = donor_well_table(tiny_manifest)
     # 6 donors x 4 cell types per donor = 24 (donor, cell_type) groups.
@@ -70,11 +74,6 @@ def test_donor_well_table_donor_coverage(tiny_manifest):
     # Every donor appears in every cell type.
     assert set(table["line_ID"]) == {"D1", "D2", "D3", "D4", "D5", "D6"}
     assert set(table["cell_type"]) == {"stem", "progen", "neuron", "astro"}
-
-
-import math
-
-from cerberus_neuro.audit import imbalance_metric
 
 
 def test_imbalance_metric_perfect_balance(tiny_manifest):
@@ -110,9 +109,6 @@ def test_imbalance_metric_single_donor_returns_nan():
     imbalance = imbalance_metric(table)
     assert math.isnan(imbalance[("stem", "control")]["cv"])
     assert imbalance[("stem", "control")]["n_donors"] == 1
-
-
-from cerberus_neuro.audit import crop_budget_estimate
 
 
 def test_crop_budget_estimate_returns_expected_shape(tiny_manifest):
