@@ -1,4 +1,5 @@
 """Tests for cerberus_neuro.audit donor-structure utilities."""
+
 from __future__ import annotations
 
 import math
@@ -25,24 +26,30 @@ def tiny_manifest() -> pd.DataFrame:
     """
     rows = []
     donors = [
-        ("D1", "control"), ("D2", "control"), ("D3", "control"),
-        ("D4", "deletion"), ("D5", "deletion"), ("D6", "deletion"),
+        ("D1", "control"),
+        ("D2", "control"),
+        ("D3", "control"),
+        ("D4", "deletion"),
+        ("D5", "deletion"),
+        ("D6", "deletion"),
     ]
     for donor_id, condition in donors:
         for cell_type in ["stem", "progen", "neuron", "astro"]:
             for well_idx in range(2):
                 well = f"A{well_idx + 1:02d}"
                 for site in range(4):
-                    rows.append({
-                        "Metadata_Plate": f"plate_{donor_id}_{cell_type}",
-                        "Metadata_Well": well,
-                        "Metadata_Site": site + 1,
-                        "Metadata_cell_type": cell_type,
-                        "Metadata_line_ID": donor_id,
-                        "Metadata_line_condition": condition,
-                        "Metadata_line_source": "synthetic",
-                        "batch": f"NCP_{cell_type.upper()}_1",
-                    })
+                    rows.append(
+                        {
+                            "Metadata_Plate": f"plate_{donor_id}_{cell_type}",
+                            "Metadata_Well": well,
+                            "Metadata_Site": site + 1,
+                            "Metadata_cell_type": cell_type,
+                            "Metadata_line_ID": donor_id,
+                            "Metadata_line_condition": condition,
+                            "Metadata_line_source": "synthetic",
+                            "batch": f"NCP_{cell_type.upper()}_1",
+                        }
+                    )
     return pd.DataFrame(rows)
 
 
@@ -82,7 +89,7 @@ def test_imbalance_metric_perfect_balance(tiny_manifest):
     imbalance = imbalance_metric(table)
     # 4 cell types x 2 conditions = 8 groups.
     assert len(imbalance) == 8
-    for key, val in imbalance.items():
+    for _key, val in imbalance.items():
         assert val["cv"] == 0
         assert val["n_donors"] == 3
 

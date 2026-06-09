@@ -4,6 +4,7 @@ Pure-pandas operations on the manifest DataFrame returned by
 :func:`cerberus_neuro.data.build_manifest`. No S3, no torch, no PyTorch
 dependencies — these utilities run on Colab Free.
 """
+
 from __future__ import annotations
 
 import math
@@ -27,11 +28,7 @@ def donor_counts_by_condition(manifest: pd.DataFrame) -> dict[str, int]:
     """
     if len(manifest) == 0:
         return {}
-    return (
-        manifest.groupby("Metadata_line_condition")["Metadata_line_ID"]
-        .nunique()
-        .to_dict()
-    )
+    return manifest.groupby("Metadata_line_condition")["Metadata_line_ID"].nunique().to_dict()
 
 
 def donor_well_table(manifest: pd.DataFrame) -> pd.DataFrame:
@@ -46,22 +43,17 @@ def donor_well_table(manifest: pd.DataFrame) -> pd.DataFrame:
     DataFrame with columns: ``cell_type``, ``line_condition``, ``line_ID``,
     ``n_wells``. Sorted by (cell_type, line_condition, line_ID).
     """
-    well_keys = (
-        manifest[
-            [
-                "Metadata_cell_type",
-                "Metadata_line_condition",
-                "Metadata_line_ID",
-                "Metadata_Plate",
-                "Metadata_Well",
-            ]
+    well_keys = manifest[
+        [
+            "Metadata_cell_type",
+            "Metadata_line_condition",
+            "Metadata_line_ID",
+            "Metadata_Plate",
+            "Metadata_Well",
         ]
-        .drop_duplicates()
-    )
+    ].drop_duplicates()
     counts = (
-        well_keys.groupby(
-            ["Metadata_cell_type", "Metadata_line_condition", "Metadata_line_ID"]
-        )
+        well_keys.groupby(["Metadata_cell_type", "Metadata_line_condition", "Metadata_line_ID"])
         .size()
         .reset_index(name="n_wells")
     )
@@ -133,9 +125,7 @@ def crop_budget_estimate(manifest: pd.DataFrame, crops_per_site: int) -> dict[st
     ``max_crops_upper_bound`` keys.
     """
     n_sites = int(len(manifest))
-    n_wells = int(
-        manifest.groupby(["Metadata_Plate", "Metadata_Well"]).ngroups
-    )
+    n_wells = int(manifest.groupby(["Metadata_Plate", "Metadata_Well"]).ngroups)
     return {
         "n_sites": n_sites,
         "n_wells": n_wells,

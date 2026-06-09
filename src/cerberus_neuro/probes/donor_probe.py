@@ -11,6 +11,7 @@ scalar. ratio ≪ 1 means the encoder retains less donor info than disease info
 (good); ratio ≥ 1 means donor info is at least as linearly extractable as
 disease info (red flag).
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -24,7 +25,7 @@ def fit_linear_probe(
     val_labels: np.ndarray,
     n_classes: int,
     max_iter: int = 1000,
-    C: float = 1.0,
+    C: float = 1.0,  # noqa: N803 — mirrors scikit-learn's LogisticRegression(C=...) parameter
 ) -> dict[str, float]:
     """Fit an L2-regularized multinomial logistic regression and report accuracy.
 
@@ -86,13 +87,17 @@ def parallel_probe_report(
     good (encoder retained little donor info); ratio ≥ 1 is a red flag.
     """
     donor_report = fit_linear_probe(
-        train_emb=train_emb, train_labels=train_donor,
-        val_emb=val_emb, val_labels=val_donor,
+        train_emb=train_emb,
+        train_labels=train_donor,
+        val_emb=val_emb,
+        val_labels=val_donor,
         n_classes=n_donors,
     )
     disease_report = fit_linear_probe(
-        train_emb=train_emb, train_labels=train_disease,
-        val_emb=val_emb, val_labels=val_disease,
+        train_emb=train_emb,
+        train_labels=train_disease,
+        val_emb=val_emb,
+        val_labels=val_disease,
         n_classes=2,
     )
     ratio = donor_report["val_accuracy"] / max(disease_report["val_accuracy"], 1e-6)

@@ -25,15 +25,13 @@ from pathlib import Path
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as F  # noqa: N812 — conventional PyTorch alias
 from pytorch_msssim import ssim
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
 from torch.utils.data import DataLoader
 
 from cerberus_neuro.model import (
-    BaselineDiseaseClassifier,
-    CerberusModel,
     CerberusOutput,
 )
 
@@ -41,12 +39,12 @@ from cerberus_neuro.model import (
 @dataclass
 class TrainConfig:
     n_epochs: int = 5
-    steps_per_epoch: int = 200          # IterableDataset: caller computes from manifest size
-    lr: float = 3e-4                     # learning rate for new (head) parameters
-    encoder_lr_ratio: float = 1.0        # ratio for pretrained encoder; e.g. 0.1 -> encoder lr = 0.1 * lr
+    steps_per_epoch: int = 200  # IterableDataset: caller computes from manifest size
+    lr: float = 3e-4  # learning rate for new (head) parameters
+    encoder_lr_ratio: float = 1.0  # ratio for pretrained encoder; e.g. 0.1 -> encoder lr = 0.1 * lr
     weight_decay: float = 1e-4
-    warmup_steps: int = 0                # 0 disables warmup; otherwise linear ramp 0 -> lr
-    grad_clip_norm: float = 1.0          # 0 disables gradient norm clipping
+    warmup_steps: int = 0  # 0 disables warmup; otherwise linear ramp 0 -> lr
+    grad_clip_norm: float = 1.0  # 0 disables gradient norm clipping
     amp: bool = True
     log_every_steps: int = 25
     ckpt_every_steps: int = 250
@@ -68,7 +66,7 @@ class KendallMultiTaskLoss(nn.Module):
 
     def forward(self, losses: list[torch.Tensor]) -> torch.Tensor:
         total = losses[0].new_zeros(())
-        for lv, L in zip(self.log_vars, losses):
+        for lv, L in zip(self.log_vars, losses, strict=False):  # noqa: N806 — L is a loss scalar
             total = total + 0.5 * torch.exp(-lv) * L + 0.5 * lv
         return total
 
@@ -93,7 +91,9 @@ def virtual_staining_loss(
 
 
 def soft_dice_loss(
-    probs: torch.Tensor, target: torch.Tensor, eps: float = 1e-6,
+    probs: torch.Tensor,
+    target: torch.Tensor,
+    eps: float = 1e-6,
 ) -> torch.Tensor:
     """1 - soft Dice averaged across channels. Probs in [0, 1], target in [0, 1].
 
@@ -163,9 +163,9 @@ def _cerberus_step(
     cond: torch.Tensor,
     kendall: KendallMultiTaskLoss,
 ) -> tuple[torch.Tensor, dict[str, float]]:
-    L_ct = F.cross_entropy(out.cell_type_logits, ct)
-    L_cond = F.cross_entropy(out.line_condition_logits, cond)
-    L_seg = segmentation_loss(out.fluorescence_logits, fluo)
+    L_ct = F.cross_entropy(out.cell_type_logits, ct)  # noqa: N806 — L denotes a loss term
+    L_cond = F.cross_entropy(out.line_condition_logits, cond)  # noqa: N806 — L denotes a loss term
+    L_seg = segmentation_loss(out.fluorescence_logits, fluo)  # noqa: N806 — L denotes a loss term
     total = kendall([L_ct, L_cond, L_seg])
     return total, {
         "L_cell_type": L_ct.item(),
@@ -181,7 +181,7 @@ def _baseline_step(
     logits: torch.Tensor,
     cond: torch.Tensor,
 ) -> tuple[torch.Tensor, dict[str, float]]:
-    L = F.cross_entropy(logits, cond)
+    L = F.cross_entropy(logits, cond)  # noqa: N806 — L denotes a loss term
     return L, {"L_line_condition": L.item()}
 
 
@@ -261,6 +261,7 @@ def load_checkpoint(
 
 def _push_to_hf(local_path: Path, repo_id: str, path_in_repo: str | None = None) -> None:
     from huggingface_hub import HfApi, create_repo
+
     create_repo(repo_id=repo_id, repo_type="model", exist_ok=True)
     HfApi().upload_file(
         path_or_fileobj=str(local_path),
@@ -309,7 +310,7 @@ def evaluate(
             probs = torch.sigmoid(logits)
             target = fluo.float()
             for c in range(n_fluo):
-                lc, pc, tc = logits[:, c:c + 1], probs[:, c:c + 1], target[:, c:c + 1]
+                lc, pc, tc = logits[:, c : c + 1], probs[:, c : c + 1], target[:, c : c + 1]
                 sum_bce_per_ch[c] += F.binary_cross_entropy_with_logits(lc, tc).item() * bf.size(0)
                 sum_intersection[c] += (pc * tc).sum().item()
                 sum_union[c] += (pc + tc - pc * tc).sum().item()
@@ -325,11 +326,13 @@ def evaluate(
         "L_line_condition": sum_l_cond / max(n, 1),
     }
     if is_cerberus:
-        metrics.update({
-            "acc_cell_type": correct_ct / max(n, 1),
-            "L_cell_type": sum_l_ct / max(n, 1),
-            "L_segmentation": sum_l_vs / max(n, 1),
-        })
+        metrics.update(
+            {
+                "acc_cell_type": correct_ct / max(n, 1),
+                "L_cell_type": sum_l_ct / max(n, 1),
+                "L_segmentation": sum_l_vs / max(n, 1),
+            }
+        )
         for c, name in enumerate(_FLUO_CH_NAMES):
             metrics[f"BCE_{name}"] = sum_bce_per_ch[c].item() / max(n, 1)
             metrics[f"IoU_{name}"] = (sum_intersection[c] / (sum_union[c] + 1e-6)).item()
@@ -401,7 +404,9 @@ def train(
 
     step, epoch_start = 0, 0
     if resume_from is not None and Path(resume_from).exists():
-        step, epoch_start = load_checkpoint(Path(resume_from), model, optimizer, scheduler, kendall, scaler)
+        step, epoch_start = load_checkpoint(
+            Path(resume_from), model, optimizer, scheduler, kendall, scaler
+        )
         print(f"resumed from {resume_from} at step={step}, epoch={epoch_start}")
 
     checkpoint_dir = Path(checkpoint_dir)
@@ -447,41 +452,67 @@ def train(
             step += 1
             if step % cfg.log_every_steps == 0:
                 rec = {
-                    "step": step, "epoch": epoch,
+                    "step": step,
+                    "epoch": epoch,
                     "loss": loss.item(),
                     "lr": optimizer.param_groups[0]["lr"],
                     **metrics,
                 }
                 with log_path.open("a") as f:
                     f.write(json.dumps(rec) + "\n")
-                print(f"[step {step:6d}] loss={loss.item():.4f}  "
-                      f"lr={rec['lr']:.2e}  " +
-                      "  ".join(f"{k}={v:.3f}" for k, v in metrics.items()))
+                print(
+                    f"[step {step:6d}] loss={loss.item():.4f}  "
+                    f"lr={rec['lr']:.2e}  " + "  ".join(f"{k}={v:.3f}" for k, v in metrics.items())
+                )
 
             if step % cfg.ckpt_every_steps == 0:
-                save_checkpoint(checkpoint_dir / "latest.pt",
-                                model, optimizer, scheduler, kendall, scaler, step, epoch, cfg)
+                save_checkpoint(
+                    checkpoint_dir / "latest.pt",
+                    model,
+                    optimizer,
+                    scheduler,
+                    kendall,
+                    scaler,
+                    step,
+                    epoch,
+                    cfg,
+                )
 
             if step >= (epoch + 1) * cfg.steps_per_epoch:
                 break
 
         if val_loader is not None:
             val_metrics = evaluate(model, val_loader, device, is_cerberus)
-            print(f"[epoch {epoch}] val: " + "  ".join(f"{k}={v:.4f}" for k, v in val_metrics.items()))
+            print(
+                f"[epoch {epoch}] val: " + "  ".join(f"{k}={v:.4f}" for k, v in val_metrics.items())
+            )
             with log_path.open("a") as f:
                 f.write(json.dumps({"epoch": epoch, "split": "val", **val_metrics}) + "\n")
 
         # Retention policy: keep only latest.pt locally. HF Hub holds the
         # per-epoch history (latest.pt is uploaded as epoch_NNN.pt to the repo).
-        save_checkpoint(checkpoint_dir / "latest.pt",
-                        model, optimizer, scheduler, kendall, scaler, step, epoch, cfg)
+        save_checkpoint(
+            checkpoint_dir / "latest.pt",
+            model,
+            optimizer,
+            scheduler,
+            kendall,
+            scaler,
+            step,
+            epoch,
+            cfg,
+        )
         if hf_repo:
             try:
-                _push_to_hf(checkpoint_dir / "latest.pt", hf_repo,
-                            path_in_repo=f"epoch_{epoch:03d}.pt")
+                _push_to_hf(
+                    checkpoint_dir / "latest.pt", hf_repo, path_in_repo=f"epoch_{epoch:03d}.pt"
+                )
                 print(f"pushed latest.pt to HF {hf_repo} as epoch_{epoch:03d}.pt")
             except Exception as e:
                 print(f"HF push failed: {e}")
 
-    return {"final_step": step, "final_epoch": epoch_start + cfg.n_epochs - 1,
-            "checkpoint_dir": str(checkpoint_dir)}
+    return {
+        "final_step": step,
+        "final_epoch": epoch_start + cfg.n_epochs - 1,
+        "checkpoint_dir": str(checkpoint_dir),
+    }

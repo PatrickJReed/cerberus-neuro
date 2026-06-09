@@ -9,6 +9,7 @@ Cross-architecture: works on any differentiable classifier. The argus-cells
 methods spine uses this on both Argus-RN34 and (later) Argus-CCT for the
 cross-architecture-agreement analysis.
 """
+
 from __future__ import annotations
 
 import torch
@@ -54,8 +55,7 @@ def compute_integrated_gradients(
             baseline = torch.zeros_like(images)
         if baseline.shape != images.shape:
             raise ValueError(
-                f"baseline shape {tuple(baseline.shape)} != images shape "
-                f"{tuple(images.shape)}"
+                f"baseline shape {tuple(baseline.shape)} != images shape {tuple(images.shape)}"
             )
         alphas = torch.linspace(1.0 / n_steps, 1.0, n_steps, device=images.device)
         # Average gradient over the path.

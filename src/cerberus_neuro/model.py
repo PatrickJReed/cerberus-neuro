@@ -40,15 +40,17 @@ from dataclasses import dataclass
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as F  # noqa: N812 — conventional PyTorch alias
 from torchvision.models import ResNet34_Weights, resnet34
 
 
 @dataclass
 class CerberusOutput:
-    cell_type_logits: torch.Tensor       # (N, n_cell_types)
+    cell_type_logits: torch.Tensor  # (N, n_cell_types)
     line_condition_logits: torch.Tensor  # (N, n_line_conditions)
-    fluorescence_logits: torch.Tensor    # (N, n_fluorescence_channels, H, W) — raw logits; apply sigmoid for [0, 1] probability masks
+    fluorescence_logits: (
+        torch.Tensor
+    )  # (N, n_fluorescence_channels, H, W) — raw logits; apply sigmoid for [0, 1] probability masks
 
 
 def _adapt_conv1(pretrained_weight: torch.Tensor, in_channels: int) -> torch.Tensor:
@@ -96,10 +98,10 @@ class ResNet34Encoder(nn.Module):
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, ...]:
         x0 = self.relu(self.bn1(self.conv1(x)))  # (64, H/2,  W/2)
-        x1 = self.layer1(self.maxpool(x0))       # (64, H/4,  W/4)
-        x2 = self.layer2(x1)                     # (128, H/8,  W/8)
-        x3 = self.layer3(x2)                     # (256, H/16, W/16)
-        x4 = self.layer4(x3)                     # (512, H/32, W/32)
+        x1 = self.layer1(self.maxpool(x0))  # (64, H/4,  W/4)
+        x2 = self.layer2(x1)  # (128, H/8,  W/8)
+        x3 = self.layer3(x2)  # (256, H/16, W/16)
+        x4 = self.layer4(x3)  # (512, H/32, W/32)
         return x0, x1, x2, x3, x4
 
 
@@ -135,8 +137,8 @@ class VirtualStainingHead(nn.Module):
         super().__init__()
         self.up3 = _UpBlock(512, 256, 256)  # H/32 -> H/16
         self.up2 = _UpBlock(256, 128, 128)  # H/16 -> H/8
-        self.up1 = _UpBlock(128, 64, 64)    # H/8  -> H/4
-        self.up0 = _UpBlock(64, 64, 32)     # H/4  -> H/2
+        self.up1 = _UpBlock(128, 64, 64)  # H/8  -> H/4
+        self.up0 = _UpBlock(64, 64, 32)  # H/4  -> H/2
         self.up_final = nn.Sequential(
             nn.Conv2d(32, 16, 3, padding=1, bias=False),
             nn.BatchNorm2d(16),
@@ -146,8 +148,11 @@ class VirtualStainingHead(nn.Module):
 
     def forward(
         self,
-        x0: torch.Tensor, x1: torch.Tensor, x2: torch.Tensor,
-        x3: torch.Tensor, x4: torch.Tensor,
+        x0: torch.Tensor,
+        x1: torch.Tensor,
+        x2: torch.Tensor,
+        x3: torch.Tensor,
+        x4: torch.Tensor,
         target_size: tuple[int, int],
     ) -> torch.Tensor:
         x = self.up3(x4, x3)
@@ -207,6 +212,7 @@ class CerberusModel(nn.Module):
     def parameter_count(self) -> dict[str, int]:
         def count(m: nn.Module) -> int:
             return sum(p.numel() for p in m.parameters() if p.requires_grad)
+
         return {
             "encoder": count(self.encoder),
             "cell_type_head": count(self.cell_type_head),
@@ -250,7 +256,9 @@ class VirtualStainingOnlyModel(nn.Module):
 
     model_kind = "vs_only"
 
-    def __init__(self, in_channels: int = 1, out_channels: int = 5, pretrained_encoder: bool = True):
+    def __init__(
+        self, in_channels: int = 1, out_channels: int = 5, pretrained_encoder: bool = True
+    ):
         super().__init__()
         self.encoder = ResNet34Encoder(in_channels=in_channels, pretrained=pretrained_encoder)
         self.decoder = VirtualStainingHead(out_channels)
@@ -297,6 +305,7 @@ class BaselineDiseaseClassifier(nn.Module):
     def parameter_count(self) -> dict[str, int]:
         def count(m: nn.Module) -> int:
             return sum(p.numel() for p in m.parameters() if p.requires_grad)
+
         return {
             "encoder": count(self.encoder),
             "head": count(self.head),

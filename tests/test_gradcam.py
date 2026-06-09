@@ -1,4 +1,5 @@
 """Tests for the GradCAM attribution method."""
+
 from __future__ import annotations
 
 import torch
@@ -24,8 +25,9 @@ def test_compute_gradcam_returns_saliency_at_input_resolution(tiny_model_6ch, ti
     assert result.metadata["target_class"] == 1
 
 
-def test_compute_gradcam_channel_scores_have_shape_B_by_C_with_input_channels(
-    tiny_model_6ch, tiny_batch_6ch,
+def test_compute_gradcam_channel_scores_have_shape_B_by_C_with_input_channels(  # noqa: N802 — B/C name the tensor shape axes
+    tiny_model_6ch,
+    tiny_batch_6ch,
 ):
     """GradCAM saliency is channel-agnostic (single map per sample), so we
     broadcast its sum across the input-channel axis: channel_scores[b, c] =
@@ -46,17 +48,22 @@ def test_compute_gradcam_channel_scores_have_shape_B_by_C_with_input_channels(
 
 
 def test_compute_gradcam_target_class_zero_gives_different_map(
-    tiny_model_6ch, tiny_batch_6ch,
+    tiny_model_6ch,
+    tiny_batch_6ch,
 ):
     """GradCAM for class 0 should differ from class 1 (the gradient targets
     different logits)."""
     images = tiny_batch_6ch["images"]
     r0 = compute_gradcam(
-        model=tiny_model_6ch, target_layer=tiny_model_6ch.encoder.layer4,
-        images=images, target_class=0,
+        model=tiny_model_6ch,
+        target_layer=tiny_model_6ch.encoder.layer4,
+        images=images,
+        target_class=0,
     )
     r1 = compute_gradcam(
-        model=tiny_model_6ch, target_layer=tiny_model_6ch.encoder.layer4,
-        images=images, target_class=1,
+        model=tiny_model_6ch,
+        target_layer=tiny_model_6ch.encoder.layer4,
+        images=images,
+        target_class=1,
     )
     assert not torch.allclose(r0.saliency, r1.saliency)

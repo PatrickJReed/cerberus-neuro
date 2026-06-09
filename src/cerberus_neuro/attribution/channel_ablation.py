@@ -9,6 +9,7 @@ channel *helped* (which is a useful red flag).
 Designed for the 6-channel brightfield + Cell Painting input. No gradients;
 just forward passes.
 """
+
 from __future__ import annotations
 
 import torch
@@ -82,7 +83,7 @@ def compute_channel_ablation_per_sample(
     was_training = model.training
     model.eval()
     try:
-        B, n_channels = images.shape[0], images.shape[1]
+        B, n_channels = images.shape[0], images.shape[1]  # noqa: N806 — B is the batch dimension
         baseline_conf = _target_class_confidence(model, images, labels)  # [B]
         drops = torch.zeros(B, n_channels)
         for c in range(n_channels):

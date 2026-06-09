@@ -1,7 +1,6 @@
 """Tests for the donor probe."""
-from __future__ import annotations
 
-import math
+from __future__ import annotations
 
 from cerberus_neuro.probes.donor_probe import (
     fit_linear_probe,
@@ -25,6 +24,7 @@ def test_fit_linear_probe_recovers_separable_donor(synthetic_embeddings):
 def test_fit_linear_probe_on_random_labels_returns_near_baseline(synthetic_embeddings):
     """Probing for random disease labels (no structure) → near-baseline accuracy."""
     import numpy as np
+
     rng = np.random.default_rng(0)
     n_train = synthetic_embeddings["train_emb"].shape[0]
     n_val = synthetic_embeddings["val_emb"].shape[0]

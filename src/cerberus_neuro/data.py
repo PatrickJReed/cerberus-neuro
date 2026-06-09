@@ -18,9 +18,9 @@ Two entry points:
 from __future__ import annotations
 
 import time
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator
 
 import boto3
 import numpy as np
@@ -66,7 +66,9 @@ def _s3_client():
 def _list_recursive(s3, prefix: str) -> list[tuple[str, int]]:
     paginator = s3.get_paginator("list_objects_v2")
     out = []
-    for page in paginator.paginate(Bucket=BUCKET, Prefix=prefix, PaginationConfig={"PageSize": 1000}):
+    for page in paginator.paginate(
+        Bucket=BUCKET, Prefix=prefix, PaginationConfig={"PageSize": 1000}
+    ):
         out.extend((o["Key"], o["Size"]) for o in page.get("Contents", []))
     return out
 
@@ -80,7 +82,7 @@ def _download(s3, key: str, local: Path) -> Path:
 
 def _key_from_url(url: str) -> str:
     prefix = f"s3://{BUCKET}/"
-    return url[len(prefix):] if url.startswith(prefix) else url.lstrip("/")
+    return url[len(prefix) :] if url.startswith(prefix) else url.lstrip("/")
 
 
 def build_manifest(cache_dir: Path, batches: list[str] | None = None) -> pd.DataFrame:
@@ -140,9 +142,12 @@ def build_manifest(cache_dir: Path, batches: list[str] | None = None) -> pd.Data
     )
 
     pmap_cols = [
-        "Metadata_Plate", "Metadata_Well",
-        "Metadata_cell_type", "Metadata_line_ID",
-        "Metadata_line_condition", "Metadata_line_source",
+        "Metadata_Plate",
+        "Metadata_Well",
+        "Metadata_cell_type",
+        "Metadata_line_ID",
+        "Metadata_line_condition",
+        "Metadata_line_source",
     ]
     return loads.merge(pmap[pmap_cols], on=["Metadata_Plate", "Metadata_Well"], how="inner")
 
@@ -221,8 +226,8 @@ def _load_image(s3, url: str, cache_dir: Path) -> np.ndarray:
 
 _CENTROID_COL_CANDIDATES = [
     ("AreaShape_Center_Y", "AreaShape_Center_X"),
-    ("Location_Center_Y",  "Location_Center_X"),
-    ("Center_Y",           "Center_X"),
+    ("Location_Center_Y", "Location_Center_X"),
+    ("Center_Y", "Center_X"),
 ]
 
 
@@ -241,18 +246,13 @@ def load_cell_centroids(
     Tries common centroid column-name variants (CP version dependent).
     """
     site_str = str(site)
-    key = (
-        f"{WORKSPACE_PREFIX}analysis/{batch}/{plate}/analysis/"
-        f"{plate}-{well}-{site_str}/Cells.csv"
-    )
+    key = f"{WORKSPACE_PREFIX}analysis/{batch}/{plate}/analysis/{plate}-{well}-{site_str}/Cells.csv"
     local = _download(s3, key, Path(cache_dir) / key)
     df = pd.read_csv(local)
     for y_col, x_col in _CENTROID_COL_CANDIDATES:
         if y_col in df.columns and x_col in df.columns:
             return np.stack([df[y_col].to_numpy(), df[x_col].to_numpy()], axis=1)
-    raise KeyError(
-        f"No centroid columns in {key}; first columns: {list(df.columns)[:20]}"
-    )
+    raise KeyError(f"No centroid columns in {key}; first columns: {list(df.columns)[:20]}")
 
 
 def crop_cell_count(centroids: np.ndarray | None, y: int, x: int, size: int) -> int:
@@ -260,8 +260,10 @@ def crop_cell_count(centroids: np.ndarray | None, y: int, x: int, size: int) -> 
     if centroids is None or len(centroids) == 0:
         return 0
     inside = (
-        (centroids[:, 0] >= y) & (centroids[:, 0] < y + size) &
-        (centroids[:, 1] >= x) & (centroids[:, 1] < x + size)
+        (centroids[:, 0] >= y)
+        & (centroids[:, 0] < y + size)
+        & (centroids[:, 1] >= x)
+        & (centroids[:, 1] < x + size)
     )
     return int(inside.sum())
 
@@ -366,7 +368,9 @@ class NeuroPaintingDataset(IterableDataset):
 
         rows = self.manifest.iloc[worker_id::n_workers].reset_index(drop=True)
         if self.shuffle:
-            rows = rows.sample(frac=1.0, random_state=int(epoch_seed % (2**32))).reset_index(drop=True)
+            rows = rows.sample(frac=1.0, random_state=int(epoch_seed % (2**32))).reset_index(
+                drop=True
+            )
 
         for _, row in rows.iterrows():
             try:
@@ -376,8 +380,10 @@ class NeuroPaintingDataset(IterableDataset):
                 )
                 centroids = load_cell_centroids(
                     s3,
-                    row["batch"], row["Metadata_Plate"],
-                    row["Metadata_Well"], row["Metadata_Site"],
+                    row["batch"],
+                    row["Metadata_Plate"],
+                    row["Metadata_Well"],
+                    row["Metadata_Site"],
                     cache,
                 )
             except Exception:
@@ -390,14 +396,16 @@ class NeuroPaintingDataset(IterableDataset):
             _, h, w = channels.shape
 
             selected = tile_top_cells(
-                centroids, h, w,
+                centroids,
+                h,
+                w,
                 crop_size=self.crop_size,
                 n=self.crops_per_site,
                 stride=stride,
                 min_cells=self.min_cells_per_crop,
             )
             for y, x, _ncells in selected:
-                crop = channels[:, y:y + self.crop_size, x:x + self.crop_size]
+                crop = channels[:, y : y + self.crop_size, x : x + self.crop_size]
                 if self.augment:
                     crop = apply_dihedral(crop, rng)
                 sample = (

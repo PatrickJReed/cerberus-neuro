@@ -1,4 +1,5 @@
 """Test that BaselineDiseaseClassifier exposes a 512-dim embedding extractor."""
+
 from __future__ import annotations
 
 import torch

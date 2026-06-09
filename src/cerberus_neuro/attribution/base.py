@@ -4,6 +4,7 @@ Every method in :mod:`cerberus_neuro.attribution` returns the same
 :class:`AttributionResult` dataclass so downstream analysis treats them
 uniformly.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

@@ -1,4 +1,5 @@
 """Shared pytest fixtures for the interpretability harness tests."""
+
 from __future__ import annotations
 
 import pytest
@@ -114,6 +115,10 @@ def synthetic_embeddings():
     train_emb, train_donor, train_disease = gen(train_per_donor)
     val_emb, val_donor, val_disease = gen(val_per_donor)
     return {
-        "train_emb": train_emb, "train_donor": train_donor, "train_disease": train_disease,
-        "val_emb": val_emb, "val_donor": val_donor, "val_disease": val_disease,
+        "train_emb": train_emb,
+        "train_donor": train_donor,
+        "train_disease": train_disease,
+        "val_emb": val_emb,
+        "val_donor": val_donor,
+        "val_disease": val_disease,
     }

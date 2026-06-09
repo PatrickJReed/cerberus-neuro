@@ -5,6 +5,7 @@ per-(cell_type, channel) mean. This is the core finding-shaped output of
 the argus-cells Phase 1 harness: a 4x6 table answering "for each cell type,
 which of the 6 input channels does the model rely on most?".
 """
+
 from __future__ import annotations
 
 import pandas as pd
@@ -45,14 +46,11 @@ def stratify_channel_scores_by_cell_type(
     """
     if result.channel_scores.ndim != 2:
         raise ValueError(
-            f"expected channel_scores shape [B, C], got "
-            f"{tuple(result.channel_scores.shape)}"
+            f"expected channel_scores shape [B, C], got {tuple(result.channel_scores.shape)}"
         )
     n_channels = result.channel_scores.shape[1]
     if len(channel_names) != n_channels:
-        raise ValueError(
-            f"channel_names length {len(channel_names)} != C={n_channels}"
-        )
+        raise ValueError(f"channel_names length {len(channel_names)} != C={n_channels}")
     # Validate that all cell-type indices are in range; raise IndexError
     # otherwise (matches list indexing semantics).
     cell_types_list = cell_types.tolist()

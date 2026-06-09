@@ -1,4 +1,5 @@
 """Tests for the channel-ablation attribution method."""
+
 from __future__ import annotations
 
 import torch
@@ -36,7 +37,9 @@ def test_compute_channel_ablation_zero_channel_changes_logits(tiny_model_6ch, ti
     # The scores are accuracy drops. They can be negative (ablation HELPED
     # the model, an artifact of random labels) or positive. Just check the
     # shape and the type.
-    assert result.channel_scores.dtype == torch.float32 or result.channel_scores.dtype == torch.float64
+    assert (
+        result.channel_scores.dtype == torch.float32 or result.channel_scores.dtype == torch.float64
+    )
 
 
 def test_compute_channel_ablation_per_sample_shape(tiny_model_6ch, tiny_batch_6ch):

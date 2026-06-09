@@ -4,11 +4,11 @@ Verify each function returns a matplotlib Figure and produces a non-empty file
 when saved. No pixel-level assertions — visual correctness is verified by eye
 in the Phase 1 notebook.
 """
+
 from __future__ import annotations
 
-from pathlib import Path
-
 import matplotlib
+
 matplotlib.use("Agg")  # headless backend for tests
 import pandas as pd
 import pytest

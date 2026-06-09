@@ -4,6 +4,7 @@ The dataset streams from S3, so we monkeypatch the three module-level I/O
 helpers (`_s3_client`, `_load_image`, `load_cell_centroids`) and the tile
 selector (`tile_top_cells`) to run __iter__ end-to-end without network access.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -43,9 +44,7 @@ def patched_io(monkeypatch):
     monkeypatch.setattr(
         data_mod, "_load_image", lambda s3, url, cache: np.full((8, 8), 30000, dtype=np.uint16)
     )
-    monkeypatch.setattr(
-        data_mod, "load_cell_centroids", lambda *a, **k: np.array([[4.0, 4.0]])
-    )
+    monkeypatch.setattr(data_mod, "load_cell_centroids", lambda *a, **k: np.array([[4.0, 4.0]]))
     monkeypatch.setattr(data_mod, "tile_top_cells", lambda *a, **k: [(0, 0, 5)])
 
 

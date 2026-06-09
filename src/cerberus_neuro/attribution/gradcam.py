@@ -9,11 +9,12 @@ For the argus-cells `BaselineDiseaseClassifier`, the target layer is
 ``encoder.layer4`` (the deepest conv stage, where class-discriminative spatial
 features live).
 """
+
 from __future__ import annotations
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as F  # noqa: N812 — conventional PyTorch alias
 
 from .base import AttributionResult
 
@@ -71,8 +72,8 @@ def compute_gradcam(
         model.zero_grad(set_to_none=True)
         score.backward()
 
-        act = activations["act"]               # [B, K, h, w]
-        grad = gradients["grad"]               # [B, K, h, w]
+        act = activations["act"]  # [B, K, h, w]
+        grad = gradients["grad"]  # [B, K, h, w]
         weights = grad.mean(dim=(2, 3), keepdim=True)  # [B, K, 1, 1]
         cam = (weights * act).sum(dim=1, keepdim=True)  # [B, 1, h, w]
         cam = F.relu(cam)

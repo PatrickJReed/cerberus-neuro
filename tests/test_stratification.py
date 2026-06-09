@@ -1,11 +1,12 @@
 """Tests for cell-type stratification of attribution results."""
+
 from __future__ import annotations
 
 import pandas as pd
 import torch
 
-from cerberus_neuro.attribution.base import AttributionResult
 from cerberus_neuro.analysis.stratification import stratify_channel_scores_by_cell_type
+from cerberus_neuro.attribution.base import AttributionResult
 
 
 def test_stratify_groups_per_cell_type():
@@ -46,6 +47,7 @@ def test_stratify_ignores_unknown_cell_types():
     result = AttributionResult(saliency=None, channel_scores=scores, metadata={})
 
     import pytest
+
     with pytest.raises(IndexError):
         stratify_channel_scores_by_cell_type(
             result=result,
