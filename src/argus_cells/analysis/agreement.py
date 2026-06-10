@@ -21,7 +21,7 @@ import warnings
 import torch
 from scipy.stats import ConstantInputWarning, spearmanr
 
-from cerberus_neuro.attribution.base import AttributionResult
+from argus_cells.attribution.base import AttributionResult
 
 
 def saliency_agreement(result_a: AttributionResult, result_b: AttributionResult) -> dict:

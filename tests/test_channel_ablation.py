@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import torch
 
-from cerberus_neuro.attribution.channel_ablation import (
+from argus_cells.attribution.channel_ablation import (
     compute_channel_ablation,
     compute_channel_ablation_per_sample,
 )

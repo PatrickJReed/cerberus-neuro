@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import torch
 
-from cerberus_neuro.models.cct import ArgusCCT
-from cerberus_neuro.training import TrainConfig, train
+from argus_cells.models.cct import ArgusCCT
+from argus_cells.training import TrainConfig, train
 
 
 class _TinyLoader:

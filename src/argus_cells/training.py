@@ -2,10 +2,10 @@
 
 Single :func:`train` entry point dispatches on model type:
 
-- :class:`~cerberus_neuro.model.CerberusModel`: 3-head loss with Kendall
+- :class:`~argus_cells.model.CerberusModel`: 3-head loss with Kendall
   uncertainty weighting; CE for cell type, CE for line condition,
   ``0.85 * L1 + 0.15 * (1 - SSIM)`` for virtual staining.
-- :class:`~cerberus_neuro.model.BaselineDiseaseClassifier`: single-task CE
+- :class:`~argus_cells.model.BaselineDiseaseClassifier`: single-task CE
   on disease, all 6 channels stacked as input.
 
 AdamW + cosine annealing, AMP enabled by default on CUDA. Resumable across
@@ -31,7 +31,7 @@ from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
 from torch.utils.data import DataLoader
 
-from cerberus_neuro.model import (
+from argus_cells.model import (
     CerberusOutput,
 )
 

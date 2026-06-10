@@ -11,7 +11,7 @@ from __future__ import annotations
 import pandas as pd
 import torch
 
-from cerberus_neuro.attribution.base import AttributionResult
+from argus_cells.attribution.base import AttributionResult
 
 
 def stratify_channel_scores_by_cell_type(

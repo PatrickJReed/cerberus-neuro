@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import torch
 
-from cerberus_neuro.attribution.gradcam import compute_gradcam
+from argus_cells.attribution.gradcam import compute_gradcam
 
 
 def test_compute_gradcam_returns_saliency_at_input_resolution(tiny_model_6ch, tiny_batch_6ch):

@@ -5,8 +5,8 @@ from __future__ import annotations
 import pandas as pd
 import torch
 
-from cerberus_neuro.analysis.stratification import stratify_channel_scores_by_cell_type
-from cerberus_neuro.attribution.base import AttributionResult
+from argus_cells.analysis.stratification import stratify_channel_scores_by_cell_type
+from argus_cells.attribution.base import AttributionResult
 
 
 def test_stratify_groups_per_cell_type():

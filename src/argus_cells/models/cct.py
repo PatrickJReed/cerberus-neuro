@@ -7,7 +7,7 @@ of sequence pooling, and you get a transformer that trains from scratch on
 modest data without ImageNet pretraining. That from-scratch property is the
 point here — it matches the clean public-reproduction story of the rest of the
 repo and gives a transformer-family counterpart to the ResNet34
-:class:`~cerberus_neuro.model.BaselineDiseaseClassifier`.
+:class:`~argus_cells.model.BaselineDiseaseClassifier`.
 
 The model satisfies the same interpretability contract as the baseline so the
 existing harness runs on it unchanged:
@@ -124,7 +124,7 @@ class ArgusCCT(nn.Module):
     """
 
     # Stable identity for harness/training-loop dispatch, mirroring the
-    # ``model_kind`` convention in cerberus_neuro.model.
+    # ``model_kind`` convention in argus_cells.model.
     model_kind = "argus_cct"
 
     def __init__(

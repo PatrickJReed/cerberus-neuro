@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import torch
 
-from cerberus_neuro.attribution.integrated_gradients import compute_integrated_gradients
+from argus_cells.attribution.integrated_gradients import compute_integrated_gradients
 
 
 def test_ig_returns_per_input_saliency(tiny_model_6ch, tiny_batch_6ch):

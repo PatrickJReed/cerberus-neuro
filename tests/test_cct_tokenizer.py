@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import torch
 
-from cerberus_neuro.models.cct import ArgusCCT, ConvTokenizer
+from argus_cells.models.cct import ArgusCCT, ConvTokenizer
 
 
 def test_token_count_at_256px_is_256():

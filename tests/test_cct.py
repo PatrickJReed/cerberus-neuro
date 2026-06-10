@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import torch
 
-from cerberus_neuro.models import ArgusCCT
+from argus_cells.models import ArgusCCT
 
 
 def test_forward_emits_two_logits():

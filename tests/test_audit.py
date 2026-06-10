@@ -1,4 +1,4 @@
-"""Tests for cerberus_neuro.audit donor-structure utilities."""
+"""Tests for argus_cells.audit donor-structure utilities."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import math
 import pandas as pd
 import pytest
 
-from cerberus_neuro.audit import (
+from argus_cells.audit import (
     crop_budget_estimate,
     donor_counts_by_condition,
     donor_well_table,

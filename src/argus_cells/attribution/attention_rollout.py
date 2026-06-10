@@ -20,7 +20,7 @@ Gradients, which attribute per channel). To keep the :class:`AttributionResult`
 shape uniform we broadcast the per-sample spatial sum across the input-channel
 axis, matching the convention used by GradCAM.
 
-Consumes the per-head attention captured by :class:`~cerberus_neuro.models.cct.ArgusCCT`
+Consumes the per-head attention captured by :class:`~argus_cells.models.cct.ArgusCCT`
 into ``model.attention_maps`` (a list of length ``num_layers``, each
 ``[B, num_heads, T, T]``). The function runs its own ``no_grad`` forward and
 reads ``attention_maps`` immediately after, because other entry points (notably
@@ -48,7 +48,7 @@ def compute_attention_rollout(
     model
         A transformer that records per-head attention into
         ``model.attention_maps`` on every forward (see
-        :class:`~cerberus_neuro.models.cct.ArgusCCT`). Must be a list of length
+        :class:`~argus_cells.models.cct.ArgusCCT`). Must be a list of length
         ``num_layers``, each entry ``[B, num_heads, T, T]``.
     images
         ``[B, C, H, W]`` input tensor.

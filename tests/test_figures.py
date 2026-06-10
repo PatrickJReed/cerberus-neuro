@@ -13,7 +13,7 @@ matplotlib.use("Agg")  # headless backend for tests
 import pandas as pd
 import pytest
 
-from cerberus_neuro.analysis.figures import (
+from argus_cells.analysis.figures import (
     plot_channel_ablation_heatmap,
     plot_probe_comparison,
 )

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import torch
 
-from cerberus_neuro.model import BaselineDiseaseClassifier
+from argus_cells.model import BaselineDiseaseClassifier
 
 
 def test_extract_embedding_returns_512d_vector():

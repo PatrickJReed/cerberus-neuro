@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cerberus_neuro.probes.donor_probe import (
+from argus_cells.probes.donor_probe import (
     fit_linear_probe,
     parallel_probe_report,
 )

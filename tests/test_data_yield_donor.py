@@ -11,8 +11,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-import cerberus_neuro.data as data_mod
-from cerberus_neuro.data import CHANNEL_ORDER, NeuroPaintingDataset
+import argus_cells.data as data_mod
+from argus_cells.data import CHANNEL_ORDER, NeuroPaintingDataset
 
 
 def _fake_manifest() -> pd.DataFrame:

@@ -15,8 +15,8 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 
-from cerberus_neuro.attribution import compute_attention_rollout
-from cerberus_neuro.attribution.base import AttributionResult
+from argus_cells.attribution import compute_attention_rollout
+from argus_cells.attribution.base import AttributionResult
 
 
 class _StubCCT(nn.Module):
@@ -137,7 +137,7 @@ def test_returns_attribution_result_with_metadata():
 
 def test_rollout_on_argus_cct():
     """B2: end-to-end on a real ArgusCCT (shape contract for the harness)."""
-    from cerberus_neuro.models.cct import ArgusCCT
+    from argus_cells.models.cct import ArgusCCT
 
     model = ArgusCCT(in_channels=6, n_classes=2, img_size=64).eval()
     images = torch.randn(2, 6, 64, 64)

@@ -1,6 +1,6 @@
 """Common interface for interpretability attribution methods.
 
-Every method in :mod:`cerberus_neuro.attribution` returns the same
+Every method in :mod:`argus_cells.attribution` returns the same
 :class:`AttributionResult` dataclass so downstream analysis treats them
 uniformly.
 """

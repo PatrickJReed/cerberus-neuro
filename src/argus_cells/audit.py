@@ -1,7 +1,7 @@
 """Donor-structure audit utilities for Phase 0 of argus-cells.
 
 Pure-pandas operations on the manifest DataFrame returned by
-:func:`cerberus_neuro.data.build_manifest`. No S3, no torch, no PyTorch
+:func:`argus_cells.data.build_manifest`. No S3, no torch, no PyTorch
 dependencies — these utilities run on Colab Free.
 """
 

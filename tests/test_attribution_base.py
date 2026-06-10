@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import torch
 
-from cerberus_neuro.attribution.base import AttributionResult, channel_scores_from_saliency
+from argus_cells.attribution.base import AttributionResult, channel_scores_from_saliency
 
 
 def test_attribution_result_minimal():

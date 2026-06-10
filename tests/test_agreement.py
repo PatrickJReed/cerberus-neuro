@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 import torch
 
-from cerberus_neuro.analysis import saliency_agreement
-from cerberus_neuro.attribution.base import AttributionResult
+from argus_cells.analysis import saliency_agreement
+from argus_cells.attribution.base import AttributionResult
 
 
 def _res(saliency):
